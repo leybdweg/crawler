@@ -1,10 +1,10 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
-import {WebsiteCrawlerService} from "./services/websiteCrawlerService";
+import {WebsiteCrawlerManager} from "./services/website-crawler.manager";
 
 @Module({
   imports: [],
   controllers: [AppController],
-  providers: [WebsiteCrawlerService],
+  providers: [WebsiteCrawlerManager],
 })
 export class AppModule {}
