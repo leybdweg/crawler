@@ -1,22 +1,16 @@
 import {OnModuleInit} from "@nestjs/common";
 import {Connection, createConnection} from "mysql2";
 
-export enum WebsiteStatus {
-    pending = 'pending',
-    completed = 'completed',
-    failed = 'failed'
-}
-export interface Website {
+export interface PageContent {
     readonly id?: number;
-    readonly url: string;
-    readonly status: WebsiteStatus;
-    readonly maxDepth: number;
-    readonly maxPages: number;
+    readonly pageId: number; // foreign key
+    readonly title: string;
+    readonly anchorsLinks: string;
     readonly createdAt: string;
     readonly lastUpdateAt: string;
 
 }
-export class WebsiteService implements OnModuleInit {
+export class PageContentService implements OnModuleInit {
     private readonly dbConnection: Connection;
 
     constructor() {
@@ -35,15 +29,15 @@ export class WebsiteService implements OnModuleInit {
         await this.dbConnection.connect();
     }
 
-    async createWebsite(website: Website): Promise<void> {
-        const sql = 'INSERT INTO websites (state, url, maxDepth, maxPages, createdAt, lastUpdateAt) VALUES(?, ? , ?, ? , ?, ? );';
-        const replacements = [WebsiteStatus.pending, website.url, website.maxDepth, website.maxPages, new Date(), new Date()];
+    async createContent(pageContent: PageContent): Promise<void> {
+        const sql = 'INSERT INTO pageContent (pageId, title, anchorsLinks, createdAt, lastUpdateAt) VALUES(?,?,?,?,?);';
+        const replacements = [pageContent.pageId,pageContent.title, pageContent.anchorsLinks, new Date(), new Date()];
         let result;
 
         try {
             result = await this.dbConnection.promise().execute(sql, replacements);
         } catch (e) {
-            console.error('Failed to create website \n', e.sql); // TODO: add more info to error log
+            console.error('Failed to create page content \n', e.sql); // TODO: add more info to error log
         } finally { // TODO: consider a better approach
             if(!result) {
                 throw new Error('Failed to persist website creation')

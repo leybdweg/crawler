@@ -1,22 +1,24 @@
 import {OnModuleInit} from "@nestjs/common";
 import {Connection, createConnection} from "mysql2";
 
-export enum WebsiteStatus {
+export enum PageStatus {
     pending = 'pending',
+    onWork = 'onWork',
     completed = 'completed',
     failed = 'failed'
 }
-export interface Website {
+export interface Page {
     readonly id?: number;
-    readonly url: string;
-    readonly status: WebsiteStatus;
-    readonly maxDepth: number;
-    readonly maxPages: number;
+    readonly websiteId: number;
+    readonly status: PageStatus;
+    readonly path: string;
+    readonly depth: number;
+    readonly queuePosition: number;
     readonly createdAt: string;
     readonly lastUpdateAt: string;
-
 }
-export class WebsiteService implements OnModuleInit {
+
+export class PageService implements OnModuleInit {
     private readonly dbConnection: Connection;
 
     constructor() {
@@ -35,9 +37,9 @@ export class WebsiteService implements OnModuleInit {
         await this.dbConnection.connect();
     }
 
-    async createWebsite(website: Website): Promise<void> {
-        const sql = 'INSERT INTO websites (state, url, maxDepth, maxPages, createdAt, lastUpdateAt) VALUES(?, ? , ?, ? , ?, ? );';
-        const replacements = [WebsiteStatus.pending, website.url, website.maxDepth, website.maxPages, new Date(), new Date()];
+    async createPage(page: Page): Promise<void> {
+        const sql = 'INSERT INTO pages (`path`, websiteId, status, `depth`, queuePosition, createdAt, lastUpdateAt) VALUES(?,?,?,?,?,?,?);';
+        const replacements = [page.path, page.websiteId, PageStatus.pending, page.depth, page.queuePosition, new Date(), new Date()];
         let result;
 
         try {
