@@ -50,4 +50,24 @@ export class WebsiteService implements OnModuleInit {
             }
         }
     }
+
+    async getWebsites():Promise<Website[]> {
+        const sql = 'SELECT * FROM websites where state = ?;'
+        const replacements = [WebsiteStatus.pending]
+        const dbResult = await this.dbConnection.promise().execute(sql, replacements);
+
+        const pendingWebsites: Website[] = (dbResult[0] as any[]).map(dbRow => {
+            return {
+                id: dbRow.id,
+                url: dbRow.url,
+                maxDepth: dbRow.maxDepth,
+                maxPages: dbRow.maxPages,
+                createdAt: dbRow.createdAt,
+                lastUpdateAt: dbRow.lastUpdateAt,
+                status: WebsiteStatus.pending // TODO: take from db?
+            } as Website
+        })
+
+        return pendingWebsites;
+    }
 }
