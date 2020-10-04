@@ -16,9 +16,12 @@ export class AppController {
     this.websiteService = websiteService;
 }
 
-  @Get('api/crawler')
+  @Get('ui/crawler')
   async getCrawler(@Req() req: Request, @Res() res: Response) {
-    res.json({lalala: await this.websiteCrawler.getHello()})
+    // res.render('index');
+    res.sendFile('index.html', {
+      root: `${__dirname}/../public`
+    });
   }
 
   @Post('api/crawler')
