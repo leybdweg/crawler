@@ -47,7 +47,10 @@ export class WebsiteCrawlerManager {
                     const title = response.$('title').text();
                     const links = [];
                     response.$('a').each(function () {
-                        links.push(response.$(this).attr('href'));
+                        const href = response.$(this).attr('href')
+                        if(href && href != '#' && href != '/'){ // there can be better ways to do this
+                            links.push(response.$(this).attr('href'));
+                        }
                     })
                     await this.websiteService.setWebsiteInProcess(pendingWebsite, {
                         anchorsLinks: JSON.stringify(links),
@@ -68,7 +71,7 @@ export class WebsiteCrawlerManager {
     async crawlWebsites(): Promise<void> {
         const processingWebsites = await this.websiteService.getWebsites(WebsiteStatus.processing);
         for (const processingWebsite of processingWebsites) {
-            const existingPageContents = await this.websiteContentService.getContents(processingWebsite);
+            const existingPageContents = await this.websiteContentService.getContentsFromWebsite(processingWebsite);
             let queueCounter = existingPageContents.length;
             processingWebsite.remainingPages = processingWebsite.maxPages - existingPageContents.length;
             const maxDepthAchieved = existingPageContents.reduce((result, item) => (result.depth > item.depth ? result : item)).depth

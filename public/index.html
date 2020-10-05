@@ -23,9 +23,9 @@
 
 <body>
 <form id="my-form">
-  <input type="text" id="start-url" name="start-url" placeholder="start url">
-  <input type="number" id="max-depth" name="max-depth" placeholder="max depth">
-  <input type="number" id="max-total-pages" name="max-total-pages" placeholder="max total pages">
+  <input type="text" id="start-url" name="url" placeholder="website">
+  <input type="number" id="max-depth" name="maxDepth" placeholder="max depth">
+  <input type="number" id="max-total-pages" name="maxPages" placeholder="max total pages">
   <button type="submit">Submit</button>
 </form>
 
@@ -33,21 +33,21 @@
 
 <script>
   $('#my-form').on('submit', function (event){
-    alert(111)
     const data = {}
     $(event.currentTarget).serializeArray().forEach(input => input.value && (data[input.name] = input.value));
+    debugger
     $.ajax({
       type: "POST",
-      crossDomain: true,
-      dataType: 'jsonp',
-      url: 'http://localhost:7700/api/crawler',
+      url: 'http://localhost:7700/api/websites',
       data: data,
-      // headers: {"Origin": "http://localhost:7700"},
-      // headers: {  'Access-Control-Allow-Origin': "http://localhost:7700"},
       success: function (response){
         console.log(111)
         console.log(response)
       },
+      failure: function (response) {
+        console.warn('error')
+        debugger
+      }
       // dataType: dataType
     });
     return false;

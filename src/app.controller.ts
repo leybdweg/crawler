@@ -1,38 +1,60 @@
 import {Body, Controller, Get, Post, Req, Res} from '@nestjs/common';
-import { Request, Response } from 'express';
-import {WebsiteCrawlerManager} from "./services/website-crawler.manager";
-import {Website, WebsiteService} from "./services/website.service";
+import {Request, Response} from 'express';
+import {Website, WebsiteService, WebsiteStatus} from "./services/website.service";
+import {WebsiteContentService} from "./services/website-content.service";
 
 @Controller()
 export class AppController {
-  private readonly websiteCrawler: WebsiteCrawlerManager;
+  private readonly websiteContentService: WebsiteContentService;
   private readonly websiteService: WebsiteService;
 
   constructor(
-      websiteCrawler: WebsiteCrawlerManager,
+      websiteContentService: WebsiteContentService,
       websiteService: WebsiteService,
   ) {
-    this.websiteCrawler = websiteCrawler;
+    this.websiteContentService = websiteContentService;
     this.websiteService = websiteService;
 }
 
   @Get('ui/crawler')
   async getCrawler(@Req() req: Request, @Res() res: Response) {
-    // res.render('index');
     res.sendFile('index.html', {
       root: `${__dirname}/../public`
     });
   }
 
-  @Post('api/crawler')
-  async createCrawler(
+  @Get('api/websites')
+  async getWebsites(@Req() req: Request, @Res() res: Response) {
+    const websites = this.websiteContentService.getContents();
+    const endpointResponse = websites.map(website => {
+      return {
+        title: website.title,
+        url: website.url,
+        links: website.anchorsLinks
+      }
+    });
+
+    res.json(endpointResponse)
+  }
+
+  @Post('api/websites')
+  async createWebsite(
       @Req() req: Request,
       @Res() res: Response,
       @Body() body: any
   ):Promise<void> {
-    const newWebsite = body as Website; // TODO: add validation to verify came as it expected/ return error if not
+    // TODO: add validation to verify came as it expected/ return error if not
 
-    await this.websiteService.createWebsite(newWebsite); // TODO: add tryCatch and failure response
+    await this.websiteService.createWebsite({
+      createdAt: new Date(),
+      lastUpdateAt: new Date(),
+      maxDepth: body.maxDepth,
+      maxPages: body.maxPages,
+      remainingDepth: body.maxDepth,
+      remainingPages: body.maxPages,
+      status: WebsiteStatus.pending,
+      url: body.url
+    }); // TODO: add tryCatch and failure response
 
     res.status(201);
     res.send('Created website')
