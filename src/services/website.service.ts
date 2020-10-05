@@ -1,21 +1,27 @@
 import {OnModuleInit} from "@nestjs/common";
 import {Connection, createConnection} from "mysql2";
+import {WebsiteContent, WebsiteContentStatus} from "./website-content.service";
 
 export enum WebsiteStatus {
     pending = 'pending',
     completed = 'completed',
-    failed = 'failed'
+    failed = 'failed',
+    inProcess = 'inProcess',
 }
+
 export interface Website {
+    remainingPages: number;
+    remainingDepth: number;
     readonly id?: number;
     readonly url: string;
     readonly status: WebsiteStatus;
     readonly maxDepth: number;
     readonly maxPages: number;
-    readonly createdAt: string;
-    readonly lastUpdateAt: string;
+    readonly createdAt: string | Date;
+    readonly lastUpdateAt: string | Date;
 
 }
+
 export class WebsiteService implements OnModuleInit {
     private readonly dbConnection: Connection;
 
@@ -32,12 +38,20 @@ export class WebsiteService implements OnModuleInit {
     }
 
     async onModuleInit(): Promise<void> {
-        await this.dbConnection.connect();
+        await this.dbConnection.promise().connect();
     }
 
     async createWebsite(website: Website): Promise<void> {
-        const sql = 'INSERT INTO websites (state, url, maxDepth, maxPages, createdAt, lastUpdateAt) VALUES(?, ? , ?, ? , ?, ? );';
-        const replacements = [WebsiteStatus.pending, website.url, website.maxDepth, website.maxPages, new Date(), new Date()];
+        const sql = 'INSERT INTO websites (state, url, maxDepth, maxPages, remainingPages, remainingDepth, createdAt, lastUpdateAt) VALUES(?, ? , ?, ? , ?, ? , ?, ? );';
+        const replacements = [WebsiteStatus.pending,
+            website.url,
+            website.maxDepth,
+            website.maxPages,
+            website.maxDepth,
+            website.maxPages,
+            new Date(),
+            new Date()
+        ];
         let result;
 
         try {
@@ -69,5 +83,38 @@ export class WebsiteService implements OnModuleInit {
         })
 
         return pendingWebsites;
+    }
+
+    async setWebsiteInProcess(website: Website, content: WebsiteContent): Promise<void> {
+        const sql = `BEGIN;
+                                UPDATE websites SET	state = ?,	lastUpdateAt = ?,	remainingPages = ? WHERE	id = ?;
+                                INSERT INTO websiteContent
+                                        (url, title, anchorsLinks, websiteId, status, \`depth\`, queuePosition, createdAt, lastUpdateAt)
+                                    VALUES
+                                           (?,?,?,?,?,?,?,?,?);
+                                COMMIT;`
+        const replacements = [
+           // websites
+            WebsiteStatus.inProcess,
+            new Date(),
+            (website.maxPages - 1),
+            website.id,
+            // content
+            content.url,
+            content.title,
+            content.anchorsLinks,
+            website.id,
+            content.status,
+            content.depth,
+            content.queuePosition,
+            content.createdAt,
+            content.lastUpdateAt,
+        ];
+
+        try {
+            await this.dbConnection.promise().query(sql, replacements);
+        } catch (e) {
+            console.error(e);
+        }
     }
 }
