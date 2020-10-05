@@ -1,45 +1,27 @@
 import {Injectable, OnModuleInit} from '@nestjs/common';
 // import {Connection, createConnection} from "mysql2/promise";
 import {Connection, createConnection} from "mysql2";
-import {WebsiteService} from "./website.service";
+import {Website, WebsiteService, WebsiteStatus} from "./website.service";
 import {Cron, CronExpression} from "@nestjs/schedule";
-// import * as mysql from 'mysql2/promise'
+// import * as aa from 'simplecrawler';
+import * as Crawler from 'crawler';
+import {PageContentService} from "./page-content.service";
+
 // import * as mpromise from "mysql2/promise";
+
 @Injectable()
-export class WebsiteCrawlerManager implements OnModuleInit{
-    private readonly dbConnection: Connection;
+export class WebsiteCrawlerManager {
     private readonly websiteService: WebsiteService;
+    private readonly pageContentService: PageContentService;
+    // private links = new Map<number, Website>([]);
 
     constructor(
         websiteService: WebsiteService,
+        pageContentService: PageContentService,
     ) {
         this.websiteService = websiteService;
+        this.pageContentService = pageContentService;
 
-        this.dbConnection = createConnection({
-            host: 'localhost',
-            user: 'me',
-            password: 'secret',
-            database: 'activefence',
-            // debug: true,
-            // trace: true,
-            multipleStatements: true
-        })
-    }
-
-    async onModuleInit(): Promise<void> {
-        await this.dbConnection.connect();
-    }
-
-    async getHello(): Promise<string> {
-        let result;
-        // this.dbConnection.
-        try {
-            result  = await this.dbConnection.promise().execute('select * from websites;', [])
-        } catch (e) {
-            console.log('errrrr')
-            console.log(e)
-        }
-        return `db result ${result[0]}`;
     }
 
     // @Cron('45 * * * * *')
