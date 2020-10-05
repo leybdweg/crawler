@@ -31,20 +31,7 @@ export class WebsiteCrawlerManager {
         this.crawler = new Crawler({
             rateLimit: 2000,
             maxConnections: 1,
-            callback: async (error, res, done) => {
-                if (error) {
-                    console.log(error)
-                } else {
-                    const url = res.options.uri;
-                    const title = res.$('title').text();
-                    const links = [];
-                    res.$('a').each(function () {
-                        links.push(res.$(this).attr('href'));
-                    });
-
-                }
-                done();
-            }
+            callback: (error, res, done) => {}
         });
     }
 
