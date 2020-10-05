@@ -6,7 +6,7 @@ export enum WebsiteStatus {
     pending = 'pending',
     completed = 'completed',
     failed = 'failed',
-    inProcess = 'inProcess',
+    processing = 'processing',
 }
 
 export interface Website {
@@ -14,7 +14,7 @@ export interface Website {
     remainingDepth: number;
     readonly id?: number;
     readonly url: string;
-    readonly status: WebsiteStatus;
+    status: WebsiteStatus;
     readonly maxDepth: number;
     readonly maxPages: number;
     readonly createdAt: string | Date;
@@ -95,7 +95,7 @@ export class WebsiteService implements OnModuleInit {
                                 COMMIT;`
         const replacements = [
            // websites
-            WebsiteStatus.inProcess,
+            WebsiteStatus.processing,
             new Date(),
             (website.maxPages - 1),
             website.id,
@@ -116,5 +116,15 @@ export class WebsiteService implements OnModuleInit {
         } catch (e) {
             console.error(e);
         }
+    }
+
+    async updateWebsite(website: Website) {
+        const sql = `UPDATE websites SET	state = ?,	lastUpdateAt = ?,	remainingPages = ? WHERE	id = ?;`
+        const replacements = [
+            website.status,
+            new Date(),
+            website.remainingPages,
+            website.id
+        ]
     }
 }

@@ -1,5 +1,6 @@
 import {OnModuleInit} from "@nestjs/common";
 import {Connection, createConnection} from "mysql2";
+import {Website} from "./website.service";
 
 export enum WebsiteContentStatus {
     pending = 'pending',
@@ -38,42 +39,57 @@ export class WebsiteContentService implements OnModuleInit {
         await this.dbConnection.connect();
     }
 
-    // async createWebsite(website: Website): Promise<void> {
-    //     INSERT INTO websiteContent VALUES('', '', '', 0, 0, 0, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
-    //
-    //     const sql = 'INSERT INTO websiteContent (url, title, anchorsLinks, websiteId, status, `depth`, queuePosition, createdAt, lastUpdateAt)  VALUES(?, ? , ?, ? , ?, ? );';
-    //     const replacements = [WebsiteContentStatus.pending, website.url, website.maxDepth, website.maxPages, new Date(), new Date()];
-    //     let result;
-    //
-    //     try {
-    //         result = await this.dbConnection.promise().execute(sql, replacements);
-    //     } catch (e) {
-    //         console.error('Failed to create website \n', e.sql); // TODO: add more info to error log
-    //     } finally { // TODO: consider a better approach
-    //         // if(result[0]?.affectedRows != 1) {
-    //         if(!result) {
-    //             throw new Error('Failed to persist website creation')
-    //         }
-    //     }
-    // }
-    //
-    // async getWebsites(status: WebsiteContentStatus):Promise<Website[]> {
-    //     const sql = 'SELECT * FROM websites where state = ?;'
-    //     const replacements = [status];
-    //     const dbResult = await this.dbConnection.promise().execute(sql, replacements);
-    //
-    //     const pendingWebsites: Website[] = (dbResult[0] as any[]).map(dbRow => {
-    //         return {
-    //             id: dbRow.id,
-    //             url: dbRow.url,
-    //             maxDepth: dbRow.maxDepth,
-    //             maxPages: dbRow.maxPages,
-    //             createdAt: dbRow.createdAt,
-    //             lastUpdateAt: dbRow.lastUpdateAt,
-    //             status: WebsiteContentStatus.pending // TODO: take from db?
-    //         } as Website
-    //     })
-    //
-    //     return pendingWebsites;
-    // }
+    async createContent(website: Website, websiteContent: WebsiteContent): Promise<void> {
+
+        const sql = `INSERT INTO websiteContent
+                                        (url, title, anchorsLinks, websiteId, status, \`depth\`, queuePosition, createdAt, lastUpdateAt)
+                                    VALUES
+                                           (?,?,?,?,?,?,?,?,?);`;
+        const replacements = [
+            websiteContent.url,
+            websiteContent.title,
+            websiteContent.anchorsLinks,
+            website.id,
+            websiteContent.status,
+            websiteContent.depth,
+            websiteContent.queuePosition,
+            websiteContent.createdAt,
+            websiteContent.lastUpdateAt,
+        ];
+        let result;
+
+        try {
+            result = await this.dbConnection.promise().execute(sql, replacements);
+        } catch (e) {
+            console.error('Failed to create website \n', e.sql); // TODO: add more info to error log
+        } finally { // TODO: consider a better approach
+            // if(result[0]?.affectedRows != 1) {
+            if(!result) {
+                throw new Error('Failed to persist website creation')
+            }
+        }
+    }
+
+
+    async getContents(website: Website):Promise<WebsiteContent[]> {
+        const sql = 'SELECT * FROM websiteContent where websiteId = ? order by queuePosition desc;'
+        const replacements = [website.id];
+        const dbResult = await this.dbConnection.promise().execute(sql, replacements);
+
+        const pendingWebsites: WebsiteContent[] = (dbResult[0] as any[]).map(dbRow => {
+            return {
+                id: dbRow.id,
+                anchorsLinks: dbRow.anchorsLinks,
+                createdAt: new Date(dbRow.createdAt),
+                depth: dbRow.depth,
+                lastUpdateAt: new Date(dbRow.lastUpdateAt),
+                queuePosition: dbRow.queuePosition,
+                status: dbRow.status,
+                title: dbRow.title,
+                url: dbRow.url,
+            } as WebsiteContent
+        })
+
+        return pendingWebsites;
+    }
 }
