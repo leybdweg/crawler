@@ -31,13 +31,15 @@ export class WebsiteCrawlerManager {
         this.crawler = new Crawler({
             rateLimit: 2000,
             maxConnections: 1,
-            callback: (error, res, done) => {}
+            callback: (error, res, done) => {
+            }
         });
     }
 
     // @Cron('45 * * * * *')
-    @Cron(CronExpression.EVERY_5_SECONDS)
+    @Cron(CronExpression.EVERY_30_SECONDS)
     async crawlNewWebsites(): Promise<void> {
+        console.log('######## crawlNewWebsites ###########')
         const pendingWebsites = await this.websiteService.getWebsites(WebsiteStatus.pending);
         for (const pendingWebsite of pendingWebsites) {
             await this.crawler.direct({
@@ -48,7 +50,7 @@ export class WebsiteCrawlerManager {
                     const links = [];
                     response.$('a').each(function () {
                         const href = response.$(this).attr('href')
-                        if(href && href != '#' && href != '/'){ // there can be better ways to do this
+                        if (href && href != '#' && href != '/') { // there can be better ways to do this
                             links.push(response.$(this).attr('href'));
                         }
                     })
@@ -56,7 +58,7 @@ export class WebsiteCrawlerManager {
                         anchorsLinks: JSON.stringify(links),
                         createdAt: new Date(),
                         lastUpdateAt: new Date(),
-                        depth: 0,
+                        depth: 1,
                         status: WebsiteContentStatus.completed,
                         title: title,
                         queuePosition: 0,
@@ -67,44 +69,50 @@ export class WebsiteCrawlerManager {
         }
     }
 
-    @Cron(CronExpression.EVERY_5_SECONDS)
+    @Cron(CronExpression.EVERY_10_SECONDS)
     async crawlWebsites(): Promise<void> {
+        console.log('-------crawlWebsites-----------')
         const processingWebsites = await this.websiteService.getWebsites(WebsiteStatus.processing);
         for (const processingWebsite of processingWebsites) {
             const existingPageContents = await this.websiteContentService.getContentsFromWebsite(processingWebsite);
             let queueCounter = existingPageContents.length;
-            processingWebsite.remainingPages = processingWebsite.maxPages - existingPageContents.length;
-            const maxDepthAchieved = existingPageContents.reduce((result, item) => (result.depth > item.depth ? result : item)).depth
-            const pagesToCrawl = existingPageContents.filter(content => content.depth === maxDepthAchieved)
-            for (const websiteContent of pagesToCrawl) {
-                // href can be partial (relative to same domain)
-                const fullUrl = websiteContent.url.match(/https?:\/\//) ? websiteContent.url : `${processingWebsite.url}${websiteContent.url}`
-                await this.crawler.direct({
-                    uri: fullUrl,
-                    skipEventRequest: false,
-                    callback: async (err, response) => {
-                        const title = response.$('title').text();
-                        const links = [];
-                        response.$('a').each(function () {
-                            links.push(response.$(this).attr('href'));
-                        })
-                        queueCounter++;
-                        await this.websiteContentService.createContent(processingWebsite, {
-                            anchorsLinks: JSON.stringify(links),
-                            createdAt: new Date(),
-                            lastUpdateAt: new Date(),
-                            depth: maxDepthAchieved + 1,
-                            status: WebsiteContentStatus.completed,
-                            title: title,
-                            queuePosition: queueCounter,
-                            url: fullUrl
-                        } as WebsiteContent);
+            // processingWebsite.remainingPages = processingWebsite.maxPages - existingPageContents.length;
+            const contents = existingPageContents.filter(content => content.depth === processingWebsite.nextDepth)
+            processingWebsite.nextDepth += 1;
+            for (const websiteContent of contents) {
+                const anchorLinks = JSON.parse(websiteContent.anchorsLinks)
+                for (const anchorLink of anchorLinks) {
+                    // href can be partial (relative to same domain)
+                    const url = anchorLink.match(/https?:\/\//) ? anchorLink : `${websiteContent.url}${anchorLink}`
+                    console.log('fullUrlfullUrlfullUrl -->>> ', url)
+                    this.crawler.direct({
+                        uri: url,
+                        skipEventRequest: false,
+                        callback: async (err, response) => {
+                            const title = response.$('title').text();
+                            const links = [];
+                            response.$('a').each(function () {
+                                links.push(response.$(this).attr('href'));
+                            })
+                            queueCounter++;
+                            await this.websiteContentService.createContent(processingWebsite, {
+                                anchorsLinks: JSON.stringify(links),
+                                createdAt: new Date(),
+                                lastUpdateAt: new Date(),
+                                depth: processingWebsite.nextDepth,
+                                status: WebsiteContentStatus.completed,
+                                title: title,
+                                queuePosition: queueCounter,
+                                url: url
+                            } as WebsiteContent);
+                        }
+                    })
+                    processingWebsite.remainingPages -= 1;
+                    // TODO: race-condition due to callback is bring more than necessary
+                    if (processingWebsite.remainingPages <= 0) {
+                        processingWebsite.status = WebsiteStatus.completed;
+                        break;
                     }
-                })
-                processingWebsite.remainingPages -= 1;
-                if (processingWebsite.remainingPages === 0) {
-                    processingWebsite.status = WebsiteStatus.completed;
-                    break;
                 }
             }
 

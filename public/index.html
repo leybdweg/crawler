@@ -35,7 +35,6 @@
   $('#my-form').on('submit', function (event){
     const data = {}
     $(event.currentTarget).serializeArray().forEach(input => input.value && (data[input.name] = input.value));
-    debugger
     $.ajax({
       type: "POST",
       url: 'http://localhost:7700/api/websites',

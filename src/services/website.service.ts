@@ -11,7 +11,7 @@ export enum WebsiteStatus {
 
 export interface Website {
     remainingPages: number;
-    remainingDepth: number;
+    nextDepth: number;
     readonly id?: number;
     readonly url: string;
     status: WebsiteStatus;
@@ -42,13 +42,13 @@ export class WebsiteService implements OnModuleInit {
     }
 
     async createWebsite(website: Website): Promise<void> {
-        const sql = 'INSERT INTO websites (state, url, maxDepth, maxPages, remainingPages, remainingDepth, createdAt, lastUpdateAt) VALUES(?, ? , ?, ? , ?, ? , ?, ? );';
+        const sql = 'INSERT INTO websites (state, url,  maxPages, remainingPages, maxDepth, nextDepth, createdAt, lastUpdateAt) VALUES(?, ? , ?, ? , ?, ? , ?, ? );';
         const replacements = [WebsiteStatus.pending,
             website.url,
-            website.maxDepth,
+            website.maxPages,
             website.maxPages,
             website.maxDepth,
-            website.maxPages,
+            0, //nextDepth
             new Date(),
             new Date()
         ];
@@ -57,8 +57,9 @@ export class WebsiteService implements OnModuleInit {
         try {
             result = await this.dbConnection.promise().execute(sql, replacements);
         } catch (e) {
-            console.error('Failed to create website \n', e.sql); // TODO: add more info to error log
+            console.error('Failed to create website \n'); // TODO: add more info to error log
         } finally { // TODO: consider a better approach
+            // if(result[0]?.affectedRows != 1) {
             if(!result) {
                 throw new Error('Failed to persist website creation')
             }
@@ -78,6 +79,8 @@ export class WebsiteService implements OnModuleInit {
                 maxPages: dbRow.maxPages,
                 createdAt: dbRow.createdAt,
                 lastUpdateAt: dbRow.lastUpdateAt,
+                nextDepth: dbRow.nextDepth,
+                remainingPages: dbRow.remainingPages,
                 status: WebsiteStatus.pending // TODO: take from db?
             } as Website
         })
@@ -87,7 +90,7 @@ export class WebsiteService implements OnModuleInit {
 
     async setWebsiteInProcess(website: Website, content: WebsiteContent): Promise<void> {
         const sql = `BEGIN;
-                                UPDATE websites SET	state = ?,	lastUpdateAt = ?,	remainingPages = ? WHERE	id = ?;
+                                UPDATE websites SET	state = ?,	lastUpdateAt = ?,	remainingPages = ?, nextDepth = ? WHERE	id = ?;
                                 INSERT INTO websiteContent
                                         (url, title, anchorsLinks, websiteId, status, \`depth\`, queuePosition, createdAt, lastUpdateAt)
                                     VALUES
@@ -98,6 +101,7 @@ export class WebsiteService implements OnModuleInit {
             WebsiteStatus.processing,
             new Date(),
             (website.maxPages - 1),
+            (website.nextDepth + 1),
             website.id,
             // content
             content.url,
@@ -119,10 +123,11 @@ export class WebsiteService implements OnModuleInit {
     }
 
     async updateWebsite(website: Website) {
-        const sql = `UPDATE websites SET	state = ?,	lastUpdateAt = ?,	remainingPages = ? WHERE	id = ?;`
+        const sql = `UPDATE websites SET	state = ?,	lastUpdateAt = ?,	remainingPages = ?, nextDepth = ? WHERE	id = ?;`
         const replacements = [
             website.status,
             new Date(),
+            website.nextDepth,
             website.remainingPages,
             website.id
         ]

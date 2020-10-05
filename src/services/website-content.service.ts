@@ -68,7 +68,7 @@ export class WebsiteContentService implements OnModuleInit {
         try {
             result = await this.dbConnection.promise().execute(sql, replacements);
         } catch (e) {
-            console.error('Failed to create website \n', e.sql); // TODO: add more info to error log
+            console.error('Failed to create website content \n'); // TODO: add more info to error log
         } finally { // TODO: consider a better approach
             // if(result[0]?.affectedRows != 1) {
             if(!result) {

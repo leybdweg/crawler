@@ -50,7 +50,7 @@ export class AppController {
       lastUpdateAt: new Date(),
       maxDepth: body.maxDepth,
       maxPages: body.maxPages,
-      remainingDepth: body.maxDepth,
+      nextDepth: 1,
       remainingPages: body.maxPages,
       status: WebsiteStatus.pending,
       url: body.url
