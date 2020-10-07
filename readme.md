@@ -1,13 +1,20 @@
+- this project runs nodejs 12+ and on mysql
+
+#### HOW TO START THIS PROJECT
+
+-  npm i
+-  npm run build
+-  npm run start
+
+##### available settings by envs:
+
+- APP_PORT
+- DB_HOST 
+- DB_USER
+- DB_PASSWORD 
+- DB_SCHEME 
+
+
+
 TODO:
-
-file:///home/opinya/Downloads/ActiveFence%20-%20Home%20Assignment%20(Fullstack).pdf
-
-- apply bfs algo
-- actually crawl
-
-
-- test
-- render realtime updates
-
-
-- rewrite read as instructions for repo
+- tests

@@ -4,5 +4,5 @@ import {NestExpressApplication} from "@nestjs/platform-express";
 
 (async function main(): Promise<void> {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
-  await app.listen(7700);
+  await app.listen(process.env.APP_PORT || 7700);
 } )();

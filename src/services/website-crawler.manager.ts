@@ -37,7 +37,7 @@ export class WebsiteCrawlerManager {
     }
 
     // @Cron('45 * * * * *')
-    @Cron(CronExpression.EVERY_30_SECONDS)
+    @Cron(CronExpression.EVERY_WEEK)
     async crawlNewWebsites(): Promise<void> {
         console.log('######## crawlNewWebsites ###########')
         const pendingWebsites = await this.websiteService.getWebsites(WebsiteStatus.pending);
@@ -69,7 +69,7 @@ export class WebsiteCrawlerManager {
         }
     }
 
-    @Cron(CronExpression.EVERY_10_SECONDS)
+    @Cron(CronExpression.EVERY_WEEK)
     async crawlWebsites(): Promise<void> {
         console.log('-------crawlWebsites-----------')
         const processingWebsites = await this.websiteService.getWebsites(WebsiteStatus.processing);

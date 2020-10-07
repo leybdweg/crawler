@@ -27,10 +27,10 @@ export class WebsiteService implements OnModuleInit {
 
     constructor() {
         this.dbConnection = createConnection({
-            host: 'localhost',
-            user: 'me',
-            password: 'secret',
-            database: 'activefence',
+            host: process.env.DB_HOST || 'localhost',
+            user: process.env.DB_USER|| 'me',
+            password: process.env.DB_PASSWORD || 'secret',
+            database: process.env.DB_SCHEME || 'activefence',
             // debug: true,
             // trace: true,
             multipleStatements: true
